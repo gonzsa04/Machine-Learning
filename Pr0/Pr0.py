@@ -5,8 +5,8 @@ import random
 import time
 
 # integral de una funcion usando arrays de numpy
-def integra_mc_npy(fun = np.sin, a = 0, b = 3, num_puntos = 10000):
-    tic = time.proccess_time() # tiempo inicial
+def integra_mc_npy(fun = np.sin, a = 0, b = 3, num_puntos = 10000, showFigure = True):
+    tic = time.process_time() # tiempo inicial
 
     # generacion de la curva de la funcion
     X = np.linspace(a, b, 256, endpoint=True)
@@ -25,26 +25,28 @@ def integra_mc_npy(fun = np.sin, a = 0, b = 3, num_puntos = 10000):
     IIntegrate = (scipy.integrate.quad(fun, a, b))[0]
 
     #pintamos grafica y datos
-    plt.axes([0, 0, 1, 1])
-    plt.text(0.05,0.05, "Integral por Monte Carlo = " + str(IMonteCarlo))
-    plt.text(0.05,0.1, "Integral por scipy = " + str(IIntegrate))
+    if(showFigure):
+        plt.axes([0, 0, 1, 1])
+        plt.text(0.05,0.05, "Integral por Monte Carlo = " + str(IMonteCarlo))
+        plt.text(0.05,0.1, "Integral por scipy = " + str(IIntegrate))
 
-    plt.axes([.07, .2, .9, .75])
-    plt.plot(X, Y)
-    plt.scatter(xRand, yRand, 0.1, 'red')
+        plt.axes([.07, .2, .9, .75])
+        plt.plot(X, Y)
+        plt.scatter(xRand, yRand, 0.1, 'red')
 
-    plt.title("HECHO CON ARRAYS DE NUMPY")
+        plt.title("HECHO CON ARRAYS DE NUMPY")
 
-    plt.savefig('IntegralMonteCarloNumPY.png')
-    plt.show()
+        plt.savefig('IntegralMonteCarloNumPY.png')
+        plt.show()
 
-    toc = time.proccess_time() # tiempo final
+    toc = time.process_time() # tiempo final
     return 1000 * (toc - tic)
 
 
 
-def integra_mc_list(fun = np.sin, a = 0, b = 3, num_puntos = 10000):
-    tic = time.proccess_time() # tiempo inicial
+# integral de una funcion usando listas de python con bucles
+def integra_mc_list(fun = np.sin, a = 0, b = 3, num_puntos = 10000, showFigure = True):
+    tic = time.process_time() # tiempo inicial
 
     step = 256
     espaciado = (b - a)/step
@@ -68,43 +70,55 @@ def integra_mc_list(fun = np.sin, a = 0, b = 3, num_puntos = 10000):
         xRand.append(random.uniform(a, b))
         yRand.append(random.uniform(0, maxValue))
         if(fun(xRand[i]) > yRand[i]):
-             nDebajo = nDebajo + 1  # los que quedan bajo la funcion
+             nDebajo += 1  # los que quedan bajo la funcion
 
     # integrales por monte carlo y scipy
     IMonteCarlo = (nDebajo/num_puntos)*(b-a)*maxValue
     IIntegrate = (scipy.integrate.quad(fun, a, b))[0]
 
     #pintamos grafica y datos
-    plt.axes([0, 0, 1, 1])
-    plt.text(0.05,0.05, "Integral por Monte Carlo = " + str(IMonteCarlo))
-    plt.text(0.05,0.1, "Integral por scipy = " + str(IIntegrate))
+    if(showFigure):
+        plt.axes([0, 0, 1, 1])
+        plt.text(0.05,0.05, "Integral por Monte Carlo = " + str(IMonteCarlo))
+        plt.text(0.05,0.1, "Integral por scipy = " + str(IIntegrate))
 
-    plt.axes([.07, .2, .9, .75])
-    plt.plot(X, Y)
-    plt.scatter(xRand, yRand, 0.1, 'red')
+        plt.axes([.07, .2, .9, .75])
+        plt.plot(X, Y)
+        plt.scatter(xRand, yRand, 0.1, 'red')
 
-    plt.title("HECHO CON LISTAS DE PYTHON")
-    
-    plt.savefig('IntegralMonteCarloLists.png')
-    plt.show()
+        plt.title("HECHO CON LISTAS DE PYTHON")
+        
+        plt.savefig('IntegralMonteCarloLists.png')
+        plt.show()
 
-    toc = time.proccess_time() # tiempo final
+    toc = time.process_time() # tiempo final
     return 1000 * (toc - tic)
 
 
 
 def compara_tiempos():
-    X = np.linspace(100, 10000000, 20)
+    X = np.linspace(100, 300000, 20)
     timeNumPY = []
     timeList = []
 
     for x in X:
-        numPuntos = np.random.uniform()
+        timeNumPY.append(integra_mc_npy(num_puntos = int(x), showFigure = False))
+        timeList.append(integra_mc_list(num_puntos = int(x), showFigure = False))
+    
+    plt.figure()
+    plt.scatter(X, timeNumPY, color = 'blue', label = 'numPY')
+    plt.scatter(X, timeList, color = 'red', label = 'list')
+    plt.legend()
 
+    plt.savefig('ComparadorTiempos.png')
+    plt.show()
 
 
 def main():
-    timeNumPY = integra_mc_npy()
-    timeList = integra_mc_list()
+    timeNumPY = integra_mc_npy() # pinta grafica usando numpy
+    timeList = integra_mc_list() # pinta grafica usando listas y bucles
+    compara_tiempos()            # pinta grafica comparando tiempos entre ellos
+
+    
 
 main()
