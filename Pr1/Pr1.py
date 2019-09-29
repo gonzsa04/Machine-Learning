@@ -8,36 +8,47 @@ def carga_csv(file_name):
 
     return valores.astype(float)
 
-def h(x, O):
-    """devuelve la funcion h(x), bien usando la ecuacion de la recta o usando la matriz trasnpuesta de O"""
-    kk = np.array(O)[np.newaxis]
-    kk2 = np.array([1,x])[np.newaxis]
-    #return  kk.T.dot(kk2)
-    return O[0] + O[1]*x
+def hTransposed(X, O):
+    """devuelve la funcion h(x) usando la matriz trasnpuesta de O"""
+    return O[0]*X[0] + O[1]*X[1]
+
+def hLine(X, O):
+    """devuelve la funcion h(x) usando la ecuacion de la recta"""
+    return O[0] + O[1]*X
 
 def gradientDescendAlgorithm(valores):
     """minimiza la funcion de coste, hallando las O[0], O[1] que hacen el coste minimo, y por tanto, h(x) mas precisa"""
-    O = [0,0]                    # O[0], O[1], inicialmente ambas a 0
-    alpha = 0.01                 # coeficiente de aprendizaje
     m = np.size(valores, 0)      # numero de muestras de entrenamiento
     n = np.size(valores, 1) - 1  # numero de variables x que influyen en el resultado y
+    O = np.zeros(n)              # O[0], O[1], inicialmente ambas a 0
+    alpha = 0.01                 # coeficiente de aprendizaje
 
     # con 1500 iteraciones basta para encontrar O[0], O[1]
     for i in range(1500):
-        sumatorio = [0,0]
+        sumaJ = 0
+        sumatorio = np.zeros(n)
 
         for rows in range(m):
             for cols in range(n):
-                sumatorio[cols] += (h(valores[rows, cols], O) - valores[rows, cols])*valores[rows, cols]
+                sumatorio[cols] += (hLine(valores[rows, cols], O) - valores[rows, cols])*valores[rows, cols]
+                sumaJ += ((hLine(valores[rows, cols], O) - valores[rows, cols]))**2
+        
+        """for rows in range(m):
+            sumatorio = [0,0]
+            h = hTransposed(valores[rows, 0:-1], O)
+            #[start_row_index : end_row_index , start_column_index : end_column_index] para coger partes de una matriz
+            for cols in range(n):
+                sumatorio[cols] += (h - valores[rows, cols])*valores[rows, cols]
+                sumaJ += ((hLine(valores[rows, cols], O) - valores[rows, cols]))**2"""
 
-        O[0] = O[0] - alpha*(1/m)*sumatorio[0]
-        O[1] = O[1] - alpha*(1/m)*sumatorio[1]
+        print((1/(2*m))*sumaJ)
+        O = O - alpha*(1/m)*sumatorio
 
     graphic(valores, O)  # pintamos la grafica. En un futuro esto tendra que estar en main, y este metodo devolver O[0], O[1] como una tupla
 
 def graphic(valores, O):
     X = np.linspace(5, 22.5, 256, endpoint=True)
-    Y = h(X, O)
+    Y = hLine(X, O)
 
     # pintamos muestras de entrenamiento
     plt.scatter(valores[:,1], valores[:,2], 0.3, 'red')
