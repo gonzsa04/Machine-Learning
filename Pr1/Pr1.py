@@ -1,7 +1,7 @@
 import numpy as np
-from pandas.io.parsers import read_csv
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from pandas.io.parsers import read_csv   # para leer .csv
+from matplotlib import pyplot as plt     # para dibujar las graficas
+from mpl_toolkits.mplot3d import Axes3D  # para dibujar las graficas en 3D
 from matplotlib import cm
 
 def carga_csv(file_name):
@@ -21,6 +21,7 @@ def hLine(X, O):
     return O[0] + O[1]*X
 
 def coste(X, Y, O):
+    """devuelve la funcion de coste, dadas X, Y, y thetas"""
     H = np.dot(X, O)
     Aux = (H-Y)**2
     return Aux.sum()/(2*len(X)) # lo mismo que hacer la formula con el sumatorio...
@@ -28,9 +29,9 @@ def coste(X, Y, O):
 def gradientDescendAlgorithm(X, Y, alpha, m, n):
     """minimiza la funcion de coste, hallando las O[0], O[1] que hacen el coste minimo, y por tanto, h(x) mas precisa"""
    
-    O = np.zeros(n)      # O[0], O[1], inicialmente ambas a 0
+    O = np.zeros(n)      # O[0], O[1], ..., inicialmente todas a 0
 
-    # con 1500 iteraciones basta para encontrar O[0], O[1]
+    # con 1500 iteraciones basta para encontrar las thetas que hacen el coste minimo
     for i in range(1500):
         sumatorio = np.zeros(n)
 
@@ -38,17 +39,19 @@ def gradientDescendAlgorithm(X, Y, alpha, m, n):
             for cols in range(n):
                 sumatorio[cols] += (hLine(X[rows, 1], O) - Y[rows])*X[rows, cols]
         
-        """for rows in range(m):
+        """for rows in range(m):   # b utilizando la transpuesta de O
             h = hTransposed(X[rows], O)
             for cols in range(n):
                 sumatorio[cols] += (h - Y[rows])*X[rows, cols]"""
 
         #print(coste(X, Y, O))
-        O = O - alpha*(1/m)*sumatorio
+        O = O - alpha*(1/m)*sumatorio # actualizamos thetas
 
     return O
 
 def functionGraphic(X, Y, O):
+    """muestra el grafico de la funcion h(x)"""
+
     x = np.linspace(5, 22.5, 256, endpoint=True)
     y = hLine(x, O)
 
@@ -60,6 +63,8 @@ def functionGraphic(X, Y, O):
     plt.show()
 
 def costGraphics(X, Y):
+    """muestra diversas graficas de la funcion de coste"""
+
     # grafica 3D
     fig = plt.figure()
     ax = fig.gca(projection = '3d')
@@ -78,7 +83,7 @@ def costGraphics(X, Y):
 
 
 def make_data(t0_range, t1_range, X, Y):
-    """Genera las  matrices X, Y, Z para generar un plot en 3D"""
+    """Genera las  matrices X (Theta0), Y (Theta1), Z (Coste) para generar un plot en 3D"""
 
     step = 0.1
     Theta0 = np.arange(t0_range[0], t0_range[1], step)
@@ -111,12 +116,12 @@ def main():
     n = X.shape[1]      # numero de variables x que influyen en el resultado y
     alpha = 0.01        # coeficiente de aprendizaje
 
-    # hallamos O[0], O[1] que minimicen el coste
+    # hallamos thetas que minimicen el coste
     O = gradientDescendAlgorithm(X, Y, alpha, m, n)
 
     # pintamos graficas
     if n < 3:                     # solo lo pintaremos si no tiene mas de dos variables x (pasaria a ser multidimensional)
-        functionGraphic(X, Y, O)  # pintamos la grafica. En un futuro esto tendra que estar en main, y este metodo devolver O[0], O[1] como una tupla
-    costGraphics(X, Y)             # graficos para ver el coste
+        functionGraphic(X, Y, O)  # pintamos la grafica de la funcion h(x)
+    costGraphics(X, Y)            # graficos para ver el coste
 
 main()
