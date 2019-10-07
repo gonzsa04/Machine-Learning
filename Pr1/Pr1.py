@@ -35,9 +35,9 @@ def normalizeScales(X):
 
     return X_norm, mu, sigma
 
-def deNormalizeScales(O_norm, mu, sigma):
-
-    return (O_norm - mu)/sigma
+def normalizeValues(valoresPrueba, mu, sigma):
+    """normaliza los valores de prueba con la mu y sigma de los atributos X (al normalizarlos)"""
+    return (valoresPrueba - mu)/sigma
 
 def gradientDescendAlgorithm(X, Y, alpha, m, n, loops):
     """minimiza la funcion de coste, hallando las O[0], O[1], ... que hacen el coste minimo, y por tanto, h(x) mas precisa"""
@@ -132,7 +132,7 @@ def make_data(t0_range, t1_range, X, Y):
     return [Theta0, Theta1, Coste]
 
 def main():
-    valores = carga_csv("ex1data1.csv")
+    valores = carga_csv("ex1data2.csv")
 
     X = valores[:, :-1] # matriz X, con todas las filas y todas las columnas menos la ultima (ys)
     Y = valores[:, -1]  # matriz Y, con todas las filas y la ultima columna
@@ -144,8 +144,7 @@ def main():
     # modelo analitico de minimizar el coste (sin normalizar los atributos)
     ONormalEq = normalEquation(X, Y)
 
-    if n > 2:           # normalizamos escalas en caso de tener multiples xs (x > 2)
-        X, mu, sigma = normalizeScales(X)
+    X, mu, sigma = normalizeScales(X)
     
     # Se colocan m filas de 1 columna de 1s al principio (concatenacion de matrices)
     X = np.hstack([np.ones([m, 1]), X])
@@ -157,21 +156,15 @@ def main():
     if n < 3:                     # solo lo pintaremos si no tiene mas de dos variables x (pasaria a ser multidimensional)
         functionGraphic(X, Y, O)                 # pintamos la grafica de la funcion h(x)
         twoVariableCostGraphics(X, Y, O)         # graficos para ver el coste con dos variables
-    else:
-        aux = O[1]
-        O = deNormalizeScales(O[1:], mu, sigma)        # si hay mas atributos, los desnormalizaremos para obtener los resultados
-        O = np.insert(O, 0, [aux])
     
     multiVariableCostGraphics(C)
 
-    # pruebas de resultados
-    valoresPrueba = np.random.uniform(low=1, high=10000, size=n-1)
-    valoresPrueba = np.insert(valoresPrueba, 0, [1])
+    # pruebas de resultados por ecuacion normal y descenso de gradiente (deben dar resultados similares)
+    valoresPrueba = np.array([1, 1650, 3])                             # valores de prueba sin normalizar para la ecuacion normal
+    valoresPruebaNorm = normalizeValues(valoresPrueba[1:], mu , sigma) # valores de prueba normalizados para el descenso de gradiente
+    valoresPruebaNorm = np.insert(valoresPruebaNorm, 0, [1])
 
-    #valoresPrueba = np.array([1, 10])
-
-    print(valoresPrueba)
-    print(np.dot(O[np.newaxis], np.transpose(valoresPrueba[np.newaxis])).sum())
+    print(np.dot(O[np.newaxis], np.transpose(valoresPruebaNorm[np.newaxis])).sum())
     print(np.dot(ONormalEq, np.transpose(valoresPrueba[1:][np.newaxis])).sum())
 
 main()
