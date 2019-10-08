@@ -47,32 +47,32 @@ def gradientDescendAlgorithm(X, Y, alpha, m, n, loops):
 
     # con 1500 iteraciones basta para encontrar las thetas que hacen el coste minimo
     for i in range(loops):
-        sumatorio = np.zeros(n)
-
         """for rows in range(m):      # bucle utilizando la ecuacion de la recta para h (obviamos la columna de 1s)
             for cols in range(n):
                 sumatorio[cols] += (hLine(X[rows, 1], O) - Y[rows])*X[rows, cols]"""
 
-        """H = np.dot(X, O)
-        Aux = np.multiply((H-Y)[:, np.newaxis], X)
-        cost[i] = coste(X, Y, O)
-        O = O - alpha*(1/m)*Aux.sum() # actualizamos thetas"""
-        
-        for rows in range(m):   # b utilizando la transpuesta de O
+        """for rows in range(m):   # b utilizando la transpuesta de O
             h = hTransposed(X[rows], O)
             for cols in range(n):
                 sumatorio[cols] += (h - Y[rows])*X[rows, cols]
 
         cost[i] = coste(X, Y, O)
-        O = O - alpha*(1/m)*sumatorio # actualizamos thetas
+        O = O - alpha*(1/m)*sumatorio # actualizamos thetas"""
+
+        cost[i] = coste(X, Y, O)
+        H = np.dot(X, O)                   #X(47,3)*O(3,1) = H(47,1) 
+        O = O - alpha*(1/m)*(X.T.dot(H-Y)) #X.T(3,47)*(H-Y)(47,1) = SUM(3,1)
 
     return O, cost
 
 def normalEquation(X, Y):
     """minimiza la funcion de coste, hallando las O[0], O[1], ... que hacen el coste minimo, de forma analitica"""
-    Aux = np.linalg.pinv(np.dot(np.transpose(X), X))
-    O = np.dot((np.dot(Aux, np.transpose(X))), np.transpose(Y[np.newaxis]))
-    return np.transpose(O)
+    x_transpose = np.transpose(X)   
+    x_transpose_dot_x = x_transpose.dot(X) 
+    temp_1 = np.linalg.inv(x_transpose_dot_x)
+    temp_2 = x_transpose.dot(Y)  
+
+    return temp_1.dot(temp_2)
 
 def functionGraphic(X, Y, O):
     """muestra el grafico de la funcion h(x)"""
@@ -84,7 +84,7 @@ def functionGraphic(X, Y, O):
     plt.scatter(X[:, 1], Y, 1, 'red')
     # pintamos funcion de estimacion
     plt.plot(x, y)
-
+    plt.savefig('H(X).png')
     plt.show()
 
 def multiVariableCostGraphics(C):
@@ -92,6 +92,7 @@ def multiVariableCostGraphics(C):
 
     x = np.linspace(0, 50, 1500, endpoint=True)
     plt.plot(x, C)
+    plt.savefig('J(O).png')
     plt.show()
 
 def twoVariableCostGraphics(X, Y, O):
@@ -104,6 +105,7 @@ def twoVariableCostGraphics(X, Y, O):
     Theta0, Theta1, Coste = make_data([-10, 10], [-1, 4], X, Y)
 
     ax.plot_surface(Theta0, Theta1, Coste, cmap = cm.Spectral, linewidth = 0, antialiased = False)
+    plt.savefig('Coste3D.png')
     plt.show()
 
     # contour
@@ -111,6 +113,7 @@ def twoVariableCostGraphics(X, Y, O):
     ax.contour(Theta0, Theta1, Coste, np.logspace(-2, 3, 20)) # lista con los ticks de las curvas de nivel
                                                               # con escala logaritmica de 20 valores entre 10^-2 y 10^-3
     plt.scatter(O[0], O[1], 1, 'red')
+    plt.savefig('Contour.png')
     plt.show()
 
 def make_data(t0_range, t1_range, X, Y):
@@ -141,30 +144,35 @@ def main():
     n = X.shape[1] + 1  # numero de variables x que influyen en el resultado y, mas la primera columna de 1s
     alpha = 0.01        # coeficiente de aprendizaje
 
+    X_norm, mu, sigma = normalizeScales(X)
+    
+    # Se colocan m filas de 1 columna de 1s al principio (concatenacion de matrices)
+    X_norm = np.hstack([np.ones([m, 1]), X_norm])
+    X = np.hstack([np.ones([m, 1]), X])
+
     # modelo analitico de minimizar el coste (sin normalizar los atributos)
     ONormalEq = normalEquation(X, Y)
 
-    X, mu, sigma = normalizeScales(X)
-    
-    # Se colocan m filas de 1 columna de 1s al principio (concatenacion de matrices)
-    X = np.hstack([np.ones([m, 1]), X])
-
-    #  modelo de descenso de gradiente de minimizar el coste (aproximaciones)
-    O, C = gradientDescendAlgorithm(X, Y, alpha, m, n, 1500)
-
-    # pintamos graficas
+    valoresPrueba = np.array([1, 1650, 3]) 
     if n < 3:                     # solo lo pintaremos si no tiene mas de dos variables x (pasaria a ser multidimensional)
+        O, C = gradientDescendAlgorithm(X, Y, alpha, m, n, 1500)  #  modelo de descenso de gradiente de minimizar el coste con la X sin normalizar (1 x)
         functionGraphic(X, Y, O)                 # pintamos la grafica de la funcion h(x)
         twoVariableCostGraphics(X, Y, O)         # graficos para ver el coste con dos variables
+
+        # pruebas de resultados por ecuacion normal y descenso de gradiente (deben dar resultados similares)
+        valoresPrueba = np.array([1, 10]) 
+        print(np.dot(O[np.newaxis], np.transpose(valoresPrueba[np.newaxis])).sum())
+
+    else:
+        O, C = gradientDescendAlgorithm(X_norm, Y, alpha, m, n, 1500)#  modelo de descenso de gradiente de minimizar el coste con la X normalizada(mas de 1 x)
+
+        # pruebas de resultados por ecuacion normal y descenso de gradiente (deben dar resultados similares)
+        valoresPruebaNorm = normalizeValues(valoresPrueba[1:], mu , sigma) # valores de prueba normalizados para el descenso de gradiente
+        valoresPruebaNorm = np.insert(valoresPruebaNorm, 0, [1])
+        print(np.dot(O[np.newaxis], np.transpose(valoresPruebaNorm[np.newaxis])).sum())
+        
+    print(np.dot(ONormalEq, np.transpose(valoresPrueba[np.newaxis])).sum())
     
     multiVariableCostGraphics(C)
-
-    # pruebas de resultados por ecuacion normal y descenso de gradiente (deben dar resultados similares)
-    valoresPrueba = np.array([1, 1650, 3])                             # valores de prueba sin normalizar para la ecuacion normal
-    valoresPruebaNorm = normalizeValues(valoresPrueba[1:], mu , sigma) # valores de prueba normalizados para el descenso de gradiente
-    valoresPruebaNorm = np.insert(valoresPruebaNorm, 0, [1])
-
-    print(np.dot(O[np.newaxis], np.transpose(valoresPruebaNorm[np.newaxis])).sum())
-    print(np.dot(ONormalEq, np.transpose(valoresPrueba[1:][np.newaxis])).sum())
 
 main()
