@@ -1,14 +1,11 @@
 import numpy as np
-import scipy.optimize as opt
+import scipy.optimize as opt             # para la funcion de gradiente
 from matplotlib import pyplot as plt     # para dibujar las graficas
-from sklearn import preprocessing        # para polinomizar las Xs
-
 from scipy.io import loadmat
 
 def load_mat(file_name):
     """carga el fichero mat especificado y lo devuelve en una matriz data"""
     return loadmat(file_name)
-    
 
 def graphics(X):
     """Selecciona aleatoriamente 10 ejemplos y los pinta"""
@@ -34,11 +31,13 @@ def gradient(O, X, Y, l):
     + (l/X.shape[0])*AuxO) # igual que el gradiente anterior pero añadiendole esto ultimo para la regularizacion
 
 def oneVsAll(X, Y, num_etiquetas, reg):
-    clase = 10
-    O = np.zeros([num_etiquetas, X.shape[1]])
+    """para cada ejemplo (fila de Xs), haya los pesos theta por cada posible tipo de número que pueda ser"""
+    clase = 10                                # la primera clase a comprobar sera el numero 0
+    O = np.zeros([num_etiquetas, X.shape[1]]) # un vector de thetas aprendidas (fila) por cada clase de numero a comprobar (columna)
+
     for i in range(num_etiquetas):
-        claseVector = (Y == clase)
-        # por dentro hace la funcion de gradiente, usando nuestras funciones y variables
+        claseVector = (Y == clase) # vector con 1s si es de la clase a comprobar y 0s el resto
+        
         result = opt.fmin_tnc(func = cost, x0 = O[i], fprime = gradient, args=(X, claseVector, reg))
         O[i] = result[0] # entre todos los resultados devueltos, este ofrece las thetas optimas
         
@@ -46,22 +45,35 @@ def oneVsAll(X, Y, num_etiquetas, reg):
         else: clase += 1
     return O
 
-def successPercentage(X, Y, O, num_etiquetas):
-    """determina el porcentaje de aciertos comparando los resultados estimados con los resultados reales"""
-    clase = 10
+def logisticSuccessPercentage(X, Y, O):
+    """determina el porcentaje de aciertos de la regresión logística multicapa comparando los resultados estimados con los resultados reales"""
     numAciertos = 0
     
     for i in range(X.shape[0]):
         results = sigmoid(X[i].dot(O.T))
-        maxResult = np.where(results == np.amax(results))[0]
+        maxResult = np.argmax(results)
         if maxResult == 0: maxResult = 10
-        if clase == 10: clase = 1
-        else: clase += 1
         if maxResult == Y[i]: numAciertos += 1
 
     return (numAciertos/(X.shape[0]))*100
 
+def neuronalSuccessPercentage(results, Y):
+    """determina el porcentaje de aciertos de la red neuronal comparando los resultados estimados con los resultados reales"""
+    numAciertos = 0
+    
+    for i in range(results.shape[0]):
+        result = np.argmax(results[i]) + 1
+        if result == Y[i]: numAciertos += 1
+    return (numAciertos/(results.shape[0]))*100
+
+def propagacion(X1, O1, O2):
+    """propaga la red neuronal a traves de sus dos capas"""
+    X2 = sigmoid(X1.dot(O1.T))
+    X2 = np.hstack([np.ones([X2.shape[0], 1]), X2])
+    return sigmoid(X2.dot(O2.T))
+
 def main():
+    # REGRESION LOGISTICA MULTICAPA
     valores = load_mat("ex3data1.mat")
 
     X = valores['X'] # matriz X, con todas las filas y todas las columnas menos la ultima (ys)
@@ -76,10 +88,17 @@ def main():
     l = 0.1 # cuanto mas se aproxime a 0, mas se ajustara el polinomio (menor regularizacion)
     O = oneVsAll(X, Y, num_etiquetas, l)
 
-    success = successPercentage(X, Y, O, num_etiquetas)
-    print(str(success) + " %")
+    success = logisticSuccessPercentage(X, Y, O)
+    print("Logistic regression success: " + str(success) + " %")
+
+    # REDES NEURONALES
+    weights = load_mat('ex3weights.mat')
+    O1, O2 = weights['Theta1'], weights['Theta2']
+
+    success = neuronalSuccessPercentage(propagacion(X, O1, O2), Y)
+    print("Neuronal network success: " + str(success) + " %")
 
     #GRAFICAS
-    #graphics(X)
+    graphics(X[:, 1:])
 
 main()
