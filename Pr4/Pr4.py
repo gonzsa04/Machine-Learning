@@ -18,14 +18,21 @@ def graphics(X):
 def sigmoid(Z):
     return 1/(1+np.exp(-Z))
 
-def cost(X, Y, reg):
+def dSigmoid(Z):
+    return sigmoid(Z)*(1-sigmoid(Z))
+
+def pesosAleatorios(L_in, L_out, rango):
+    O = np.random.uniform(-rango, rango, (L_out, 1+L_in))
+    return O
+
+def cost(X, Y, O1, O2, reg):
     """devuelve un valor de coste"""
+
     a = -Y*(np.log(X))
     b = (1-Y)*(np.log(1-X))
     c = a - b
-    return c.sum()/X.shape[0]
-    #return (-np.log(X).T.dot(Y) - np.log(1-X).T.dot(1-Y)).sum()/X.shape[0]
-    #+ (reg/(2*X.shape[0]))*(O[1:,]**2).sum()) # igual que el coste anterior pero añadiendole esto ultimo para la regularizacion
+    d = (reg/(2*X.shape[0]))* ((O1[:,1:]**2).sum() + (O2[:,1:]**2).sum())
+    return ((c.sum())/X.shape[0]) + d
 
 def gradient(O, X, Y, l):    
     """la operacion que hace el gradiente por dentro -> devuelve un vector de valores"""  
@@ -49,20 +56,33 @@ def forPropagation(X1, O1, O2):
     X2 = np.hstack([np.ones([X2.shape[0], 1]), X2])
     return sigmoid(X2.dot(O2.T))
 
+def backPropAlgorithm(X, Y, O1, O2, num_etiquetas):
+    G1 = np.zeros([25, 401])
+    G2 = np.zeros([10, 25])
+
+    for i in range(X.shape[0]):
+        a1 = X[i][np.newaxis].T
+        a2 = dSigmoid(O1.dot(a1))
+        a3 = forPropagation(a1.T, O1, O2).T
+        delta3 = a3 - Y[i]
+        delta2 = (O2[:, 1:]*(delta3))*a3
+        G1 = G1 + delta2*(a1.T)
+        G2 = G2 + delta3*(a2.T)
+    return G1/X.shape[0] , G2/X.shape[0]
+
+
 def backPropagation(params_rn, num_entradas, num_ocultas, num_etiquetas, X, Y, reg):    
     AuxY = np.zeros([Y.shape[0], num_etiquetas])
     Y[Y == 10] = 0 
     for i in range(Y.shape[0]):
-        if Y[i] == 0: AuxY[9] = 1
+        if Y[i] == 0: AuxY[i, 9] = 1
         else: AuxY[i, Y[i]-1] = 1
 
     O1 = np.reshape(params_rn[:num_ocultas*(num_entradas + 1)], (num_ocultas, (num_entradas+1)))
     O2 = np.reshape(params_rn[num_ocultas*(num_entradas+1):], (num_etiquetas, (num_ocultas+1)))
 
-    result = forPropagation(X, O1, O2)
-
-    print(cost(result, AuxY, reg))
-
+    c = cost(forPropagation(X, O1, O2), AuxY, O1, O2, reg)
+    backPropAlgorithm(X,Y, O1, O2, num_etiquetas)
 
 def main():
     # REGRESION LOGISTICA MULTICAPA
@@ -74,7 +94,8 @@ def main():
     m = X.shape[0]      # numero de muestras de entrenamiento
     n = X.shape[1]      # numero de variables x que influyen en el resultado y, mas la columna de 1s
     num_etiquetas = 10
-    l = 0.1
+    l = 1
+    eIni = 0.12
 
     X = np.hstack([np.ones([X.shape[0], 1]), X])
 
