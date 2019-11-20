@@ -3,6 +3,7 @@ import scipy.optimize as opt             # para la funcion de gradiente
 import displayData
 from matplotlib import pyplot as plt     # para dibujar las graficas
 from scipy.io import loadmat
+import checkNNGradients as check
 
 def load_mat(file_name):
     """carga el fichero mat especificado y lo devuelve en una matriz data"""
@@ -52,44 +53,53 @@ def neuronalSuccessPercentage(results, Y):
 
 def forPropagation(X1, O1, O2):
     """propaga la red neuronal a traves de sus dos capas"""
-    X2 = sigmoid(X1.dot(O1.T))
-    X2 = np.hstack([np.ones([X2.shape[0], 1]), X2])
-    return sigmoid(X2.dot(O2.T))
+    m = X1.shape[0]
+    a1 = np.hstack([np.ones([m, 1]), X1])
+    z2 = np.dot(a1, O1.T)
+    a2 = np.hstack([np.ones([m, 1]), sigmoid(z2)])
+    z3 = np.dot(a2, O2.T)
+    h = sigmoid(z3)
+
+    return a1, z2, a2, z3, h
 
 def backPropAlgorithm(X, Y, O1, O2, num_etiquetas):
-    G1 = np.zeros([25, 401])
-    G2 = np.zeros([10, 25])
+    G1 = np.zeros(O1.shape)
+    G2 = np.zeros(O2.shape)
 
-    for i in range(X.shape[0]):
-        a1 = X[i][np.newaxis].T
-        a2 = dSigmoid(O1.dot(a1))
-        a3 = forPropagation(a1.T, O1, O2).T
-        delta3 = a3 - Y[i]
-        delta2 = (O2[:, 1:]*(delta3))*a3
-        G1 = G1 + delta2*(a1.T)
-        G2 = G2 + delta3*(a2.T)
-    return G1/X.shape[0] , G2/X.shape[0]
+    m = X.shape[0]
+    a1, z2, a2, z3, h = forPropagation(X, O1, O2)
+
+    for t in range(X.shape[0]):
+        a1t = a1[t, :] # (1, 401)
+        a2t = a2[t, :] # (1, 26)
+        ht = h[t, :] # (1, 10)
+        yt = Y[t] # (1, 10)
+        d3t = ht - yt # (1, 10)
+        d2t = np.dot(O2.T, d3t) * (a2t * (1 - a2t)) # (1, 26)
+
+        G1 = G1 + np.dot(d2t[1:, np.newaxis], a1t[np.newaxis, :])
+        G2 = G2 + np.dot(d3t[:, np.newaxis], a2t[np.newaxis, :])
+
+    G1 = G1/m
+    G2 = G2/m
+    return np.concatenate((np.ravel(G1), np.ravel(G2)))
 
 
 def backPropagation(params_rn, num_entradas, num_ocultas, num_etiquetas, X, Y, reg):    
-    AuxY = np.zeros([Y.shape[0], num_etiquetas])
-    Y[Y == 10] = 0 
-    for i in range(Y.shape[0]):
-        if Y[i] == 0: AuxY[i, 9] = 1
-        else: AuxY[i, Y[i]-1] = 1
-
     O1 = np.reshape(params_rn[:num_ocultas*(num_entradas + 1)], (num_ocultas, (num_entradas+1)))
     O2 = np.reshape(params_rn[num_ocultas*(num_entradas+1):], (num_etiquetas, (num_ocultas+1)))
 
-    c = cost(forPropagation(X, O1, O2), AuxY, O1, O2, reg)
-    backPropAlgorithm(X,Y, O1, O2, num_etiquetas)
+    c = cost(forPropagation(X, O1, O2)[4], Y, O1, O2, reg)
+    gradient = backPropAlgorithm(X,Y, O1, O2, num_etiquetas)
+
+    return c, gradient
 
 def main():
     # REGRESION LOGISTICA MULTICAPA
     valores = load_mat("ex4data1.mat")
 
     X = valores['X'] # matriz X, con todas las filas y todas las columnas menos la ultima (ys)
-    Y = valores['y'] # matriz Y, con todas las filas y la ultima columna
+    Y = valores['y'].ravel() # matriz Y, con todas las filas y la ultima columna
     
     m = X.shape[0]      # numero de muestras de entrenamiento
     n = X.shape[1]      # numero de variables x que influyen en el resultado y, mas la columna de 1s
@@ -97,20 +107,26 @@ def main():
     l = 1
     eIni = 0.12
 
-    X = np.hstack([np.ones([X.shape[0], 1]), X])
+    Y = (Y-1)
+
+    AuxY = np.zeros((m, num_etiquetas))
+
+    for i in range(m):
+        AuxY[i][Y[i]] = 1
 
     # REDES NEURONALES
     weights = load_mat('ex4weights.mat')
     O1, O2 = weights['Theta1'], weights['Theta2']
 
-    thetaVec = np.concatenate((np.ravel(O1), np.ravel(O2)))[np.newaxis]
+    thetaVec = np.append(O1, O2).reshape(-1)
 
-    backPropagation(thetaVec.T, n, 25, num_etiquetas, X, Y, l)
+    #backPropagation(thetaVec, n, 25, num_etiquetas, X, Y, l)
+    print(check.checkNNGradients(backPropagation, 0))
 
     #success = neuronalSuccessPercentage(forPropagation(X, O1, O2), Y)
     #print("Neuronal network success: " + str(success) + " %")
 
     #GRAFICAS
-    graphics(X[:, 1:])
+    #graphics(X[:, 1:])
 
 main()
