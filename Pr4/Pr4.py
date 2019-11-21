@@ -35,20 +35,14 @@ def cost(X, Y, O1, O2, reg):
     d = (reg/(2*X.shape[0]))* ((O1[:,1:]**2).sum() + (O2[:,1:]**2).sum())
     return ((c.sum())/X.shape[0]) + d
 
-def gradient(O, X, Y, l):    
-    """la operacion que hace el gradiente por dentro -> devuelve un vector de valores"""  
-    AuxO = np.hstack([np.zeros([1]), O[1:,]]) # sustituimos el primer valor de las thetas por 0 para que el termino independiente
-    # no se vea afectado por la regularizacion (lambda*0 = 0)
-    return (((X.T.dot(sigmoid(X.dot(O))-np.ravel(Y)))/X.shape[0])
-    + (l/X.shape[0])*AuxO) # igual que el gradiente anterior pero añadiendole esto ultimo para la regularizacion
-
 def neuronalSuccessPercentage(results, Y):
     """determina el porcentaje de aciertos de la red neuronal comparando los resultados estimados con los resultados reales"""
     numAciertos = 0
     
     for i in range(results.shape[0]):
-        result = np.argmax(results[i]) + 1
+        result = np.argmax(results[i])
         if result == Y[i]: numAciertos += 1
+        
     return (numAciertos/(results.shape[0]))*100
 
 def forPropagation(X1, O1, O2):
@@ -62,7 +56,7 @@ def forPropagation(X1, O1, O2):
 
     return a1, z2, a2, z3, h
 
-def backPropAlgorithm(X, Y, O1, O2, num_etiquetas):
+def backPropAlgorithm(X, Y, O1, O2, num_etiquetas, reg):
     G1 = np.zeros(O1.shape)
     G2 = np.zeros(O2.shape)
 
@@ -80,8 +74,12 @@ def backPropAlgorithm(X, Y, O1, O2, num_etiquetas):
         G1 = G1 + np.dot(d2t[1:, np.newaxis], a1t[np.newaxis, :])
         G2 = G2 + np.dot(d3t[:, np.newaxis], a2t[np.newaxis, :])
 
+    AuxO2 = O2
+    AuxO2[:, 0] = 0
+
     G1 = G1/m
-    G2 = G2/m
+    G2 = G2/m + (reg/m)*AuxO2
+
     return np.concatenate((np.ravel(G1), np.ravel(G2)))
 
 
@@ -90,7 +88,7 @@ def backPropagation(params_rn, num_entradas, num_ocultas, num_etiquetas, X, Y, r
     O2 = np.reshape(params_rn[num_ocultas*(num_entradas+1):], (num_etiquetas, (num_ocultas+1)))
 
     c = cost(forPropagation(X, O1, O2)[4], Y, O1, O2, reg)
-    gradient = backPropAlgorithm(X,Y, O1, O2, num_etiquetas)
+    gradient = backPropAlgorithm(X,Y, O1, O2, num_etiquetas, reg)
 
     return c, gradient
 
@@ -105,7 +103,6 @@ def main():
     n = X.shape[1]      # numero de variables x que influyen en el resultado y, mas la columna de 1s
     num_etiquetas = 10
     l = 1
-    eIni = 0.12
 
     Y = (Y-1)
 
@@ -120,8 +117,17 @@ def main():
 
     thetaVec = np.append(O1, O2).reshape(-1)
 
-    #backPropagation(thetaVec, n, 25, num_etiquetas, X, Y, l)
-    print(check.checkNNGradients(backPropagation, 0))
+    result = opt.minimize(fun = backPropagation, x0 = thetaVec,
+     args = (n, 25, num_etiquetas, X, AuxY, l), method = 'TNC', jac = True, options = {'maxiter':70})
+    
+    O1 = np.reshape(result.x[:25*(n + 1)], (25, (n+1)))
+    O2 = np.reshape(result.x[25*(n+1):], (num_etiquetas, (25+1)))
+
+    success = neuronalSuccessPercentage(forPropagation(X, O1, O2)[4], Y)
+    print("Neuronal network success: " + str(success) + " %")
+
+    #backPropagation(thetaVec, n, 25, num_etiquetas, X, AuxY, l)
+    #print(check.checkNNGradients(backPropagation, 0))
 
     #success = neuronalSuccessPercentage(forPropagation(X, O1, O2), Y)
     #print("Neuronal network success: " + str(success) + " %")
