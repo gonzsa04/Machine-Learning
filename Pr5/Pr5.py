@@ -13,6 +13,7 @@ def hLine(X, O):
     return O[0] + O[1]*X
 
 def functionGraphic(X, Y, O, mu, sigma):
+    """pinta la funcion h(x)"""
     minValue = np.amin(X)
     maxValue = np.amax(X)
     x = np.linspace(minValue, maxValue, 256, endpoint=True)[np.newaxis].T
@@ -42,13 +43,9 @@ def learningCurve(errorX, errorXVal):
     plt.show()
 
 def lambdaGraphic(errorX, errorXVal, lambdas):
-    x = np.linspace(0, lambdas.shape[0], errorX.shape[0], endpoint=True)
-    xVal = np.linspace(0, lambdas.shape[0], errorXVal.shape[0], endpoint=True)
-
-    # pintamos funcion de estimacion
-    plt.plot(x, errorX)
-    plt.plot(xVal, errorXVal)
-    plt.savefig('LambdaErrors.png')
+    plt.figure()
+    plt.plot(lambdas, errorX)
+    plt.plot(lambdas, errorXVal)
     plt.show()
 
 def costeLineal(X, Y, O, reg):
@@ -91,7 +88,6 @@ def normalizeValues(valoresPrueba, mu, sigma):
     return (valoresPrueba - mu)/sigma
 
 def main():
-    # REGRESION LOGISTICA MULTICAPA
     valores = load_mat("ex5data1.mat")
 
     X = valores['X']         # datos de entrenamiento
@@ -100,14 +96,10 @@ def main():
     Yval = valores['yval']
     Xtest = valores['Xtest'] # prueba
     Ytest = valores['ytest']
-    
-    #X = np.hstack([np.ones([X.shape[0], 1]), X])
-    #Xval = np.hstack([np.ones([Xval.shape[0], 1]), Xval])
-    #Xtest = np.hstack([np.ones([Xtest.shape[0], 1]), Xtest])
 
-    Xpoly = polynomize(X, 8)
-    Xnorm, mu, sigma = normalize(Xpoly[:, 1:])
-    Xnorm = np.hstack([np.ones([Xnorm.shape[0], 1]), Xnorm])
+    Xpoly = polynomize(X, 8)                   # pone automaticamente columna de 1s
+    Xnorm, mu, sigma = normalize(Xpoly[:, 1:]) # se pasa sin la columna de 1s (evitar division entre 0)
+    Xnorm = np.hstack([np.ones([Xnorm.shape[0], 1]), Xnorm]) # volvemos a poner columna de 1s
 
     XpolyVal = polynomize(Xval, 8)
     XnormVal = normalizeValues(XpolyVal[:, 1:], mu, sigma)
@@ -120,13 +112,14 @@ def main():
     m = Xnorm.shape[0]      # numero de muestras de entrenamiento
     n = Xnorm.shape[1]      # numero de variables x que influyen en el resultado y, mas la columna de 1s
 
-    l = np.array([0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10])
+    l = np.array([0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10]) # posibles valores de lambda
 
     thetaVec = np.zeros([n])
 
     errorX = np.zeros(l.shape[0])
     errorXVal = np.zeros(l.shape[0])
 
+    # errores para cada valor de lambda
     for i in range(l.shape[0]):
         result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
          args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':70})
@@ -137,14 +130,20 @@ def main():
 
     lambdaGraphic(errorX, errorXVal, l)
 
+    # lambda que hace el error minimo en los ejemplos de validacion
+    lambdaIndex = np.argmin(errorXVal)
+    print("Best lambda: " + str(l[lambdaIndex]))
+
+    # thetas usando la lambda que hace el error minimo (sobre ejemplos de entrenamiento)
     result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-        args = (Xnorm, Y, 3), method = 'TNC', jac = True, options = {'maxiter':70})
+        args = (Xnorm, Y, l[lambdaIndex]), method = 'TNC', jac = True, options = {'maxiter':70})
 
     O = result.x
 
-    print(costeLineal(XnormTest, Ytest, O, 3))
+    print(costeLineal(XnormTest, Ytest, O, l[lambdaIndex])) # error para los datos de testeo (nunca antes vistos)
     #functionGraphic(X, Y, O, mu, sigma)
 
+    # curvas de aprendizaje cogiendo subconjuntos
     """errorX = np.zeros(m - 1)
     errorXVal = np.zeros(m - 1)
 
