@@ -33,12 +33,22 @@ def learningCurve(errorX, errorXVal):
     """muestra el grafico de la funcion h(x)"""
 
     x = np.linspace(0, 12, errorX.shape[0], endpoint=True)
-    xVal = np.linspace(0, 12, errorX.shape[0], endpoint=True)
+    xVal = np.linspace(0, 12, errorXVal.shape[0], endpoint=True)
 
     # pintamos funcion de estimacion
     plt.plot(x, errorX)
     plt.plot(xVal, errorXVal)
-    plt.savefig('LearningCurvePolyLambda0.png')
+    plt.savefig('LearningCurvePolyLambda100.png')
+    plt.show()
+
+def lambdaGraphic(errorX, errorXVal, lambdas):
+    x = np.linspace(0, lambdas.shape[0], errorX.shape[0], endpoint=True)
+    xVal = np.linspace(0, lambdas.shape[0], errorXVal.shape[0], endpoint=True)
+
+    # pintamos funcion de estimacion
+    plt.plot(x, errorX)
+    plt.plot(xVal, errorXVal)
+    plt.savefig('LambdaErrors.png')
     plt.show()
 
 def costeLineal(X, Y, O, reg):
@@ -93,40 +103,59 @@ def main():
     
     #X = np.hstack([np.ones([X.shape[0], 1]), X])
     #Xval = np.hstack([np.ones([Xval.shape[0], 1]), Xval])
-    Xtest = np.hstack([np.ones([Xtest.shape[0], 1]), Xtest])
+    #Xtest = np.hstack([np.ones([Xtest.shape[0], 1]), Xtest])
 
     Xpoly = polynomize(X, 8)
     Xnorm, mu, sigma = normalize(Xpoly[:, 1:])
     Xnorm = np.hstack([np.ones([Xnorm.shape[0], 1]), Xnorm])
 
     XpolyVal = polynomize(Xval, 8)
-    XnormVal, muVal, sigmaVal = normalize(XpolyVal[:, 1:])
+    XnormVal = normalizeValues(XpolyVal[:, 1:], mu, sigma)
     XnormVal = np.hstack([np.ones([XnormVal.shape[0], 1]), XnormVal])
+
+    XpolyTest = polynomize(Xtest, 8)
+    XnormTest = normalizeValues(XpolyTest[:, 1:], mu, sigma)
+    XnormTest = np.hstack([np.ones([XnormTest.shape[0], 1]), XnormTest])
 
     m = Xnorm.shape[0]      # numero de muestras de entrenamiento
     n = Xnorm.shape[1]      # numero de variables x que influyen en el resultado y, mas la columna de 1s
-    l = 0
+
+    l = np.array([0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10])
 
     thetaVec = np.zeros([n])
 
-    errorX = np.zeros(m - 1)
-    errorXVal = np.zeros(m - 1)
+    errorX = np.zeros(l.shape[0])
+    errorXVal = np.zeros(l.shape[0])
+
+    for i in range(l.shape[0]):
+        result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
+         args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':70})
+        O = result.x
+
+        errorX[i] = costeLineal(Xnorm, Y, O, l[i])
+        errorXVal[i] = costeLineal(XnormVal, Yval, O, l[i])
+
+    lambdaGraphic(errorX, errorXVal, l)
 
     result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-         args = (Xnorm, Y, l), method = 'TNC', jac = True, options = {'maxiter':70})
+        args = (Xnorm, Y, 3), method = 'TNC', jac = True, options = {'maxiter':70})
 
     O = result.x
 
-    functionGraphic(X, Y, O, mu, sigma)
+    print(costeLineal(XnormTest, Ytest, O, 3))
+    #functionGraphic(X, Y, O, mu, sigma)
+
+    """errorX = np.zeros(m - 1)
+    errorXVal = np.zeros(m - 1)
 
     for i in range(1, m):
         result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-         args = (Xnorm[0:i], Y[0:i], l), method = 'TNC', jac = True, options = {'maxiter':70})
+         args = (Xnorm[0:i], Y[0:i], 100), method = 'TNC', jac = True, options = {'maxiter':70})
         O = result.x
 
-        errorX[i-1] = costeLineal(Xnorm[0:i], Y[0:i], O, l)
-        errorXVal[i-1] = costeLineal(XnormVal, Yval, O, l)
+        errorX[i-1] = costeLineal(Xnorm[0:i], Y[0:i], O, 100)
+        errorXVal[i-1] = costeLineal(XnormVal, Yval, O, 100)
 
-    learningCurve(errorX, errorXVal)
+    learningCurve(errorX, errorXVal)"""
 
 main()
