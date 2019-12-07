@@ -57,6 +57,7 @@ def main():
     bestC = C
     bestSigma = sigma
 
+    # probamos la mejor combinacion de C y sigma que de el menor error
     for i in range(8):
         C = C * 3
         sigma = 0.1
@@ -75,7 +76,5 @@ def main():
     clf.fit(X, y)
 
     functionGraphic(X, y, clf)
-
-    
 
 main()
