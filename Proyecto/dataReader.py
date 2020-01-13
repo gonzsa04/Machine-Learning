@@ -1,11 +1,18 @@
 from pandas.io.parsers import read_csv   # para leer .csv
 import numpy as np
+from scipy.io import loadmat
 
 def load_csv(file_name):
     """carga el fichero csv especificado y lo devuelve en un array de numpy"""
-    valores = read_csv(file_name, header=None).values
+    return read_csv(file_name, header=None).values
 
-    return valores
+def save_csv(file_name, array):
+    """guarda el array especificado y lo vuelca como csv"""
+    np.savetxt(file_name, array, delimiter=",")
+
+def load_mat(file_name):
+    """carga el fichero mat especificado y lo devuelve en una matriz data"""
+    return loadmat(file_name)
 
 def reduceData(data, columns):
     for i in range(columns.shape[0]):
@@ -30,16 +37,8 @@ def dataToNumbers(data):
                 else:
                     data[i, j] = 3
 
-            # category
-            elif j == 4:
-                index = data[i,j].find('Single-Player')
-                if index != -1:
-                    data[i, j] = 1
-                else:
-                    data[i, j] = 2
-
             # genre
-            elif j == 5:
+            elif j == 4:
                 aux = 0 
                 if data[i,j].find('Action') != -1:
                     aux += 7
@@ -62,7 +61,7 @@ def dataToNumbers(data):
                 #Action Strategy RPG Casual Simulation Racing Adventure Sports
                 
             # owners mean
-            elif j == 10:     
+            elif j == 9:     
                 index = data[i,j].find('-')
                 minimum = float(data[i,j][:index])
                 maximum = float(data[i,j][index+1:])
@@ -72,17 +71,29 @@ def dataToNumbers(data):
     
     return data
 
+def createY(owners):
+    L = owners.shape[0]
+    mean = owners.sum()/L
+    aux = (owners > mean)
+    return aux.astype(int) 
 
-def main():
+"""def main():
     X = load_csv("steam.csv")
-    X = reduceData(X, np.array([11, 10, 5, 4, 1, 0]))
+    X = reduceData(X, np.array([11, 10, 8, 5, 4, 1, 0]))
+    
     tags = X[0, :]
-    X = np.delete(X, 0, 0)
-
-    X = dataToNumbers(X)
     print(tags)
-    print(X[24,:])
+    
+    X = np.delete(X, 0, 0)
+    X = dataToNumbers(X)
+    print(X.mean(0))
+    X = np.random.permutation(X)
+    Y = createY(X[:, 10])[np.newaxis].T
+    X = np.delete(X, 10, 1)
+    X = np.append(X, Y, 1)
 
-main()
+    save_csv("steamReduced.csv", X)
+
+main()"""
 
 #0 1 4 5 10 11 
