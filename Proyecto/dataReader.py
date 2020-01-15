@@ -29,7 +29,7 @@ def dataToNumbers(data):
                 data[i, j] = data[i, j][:4]
 
             # platform
-            elif j == 2:
+            elif j == 1:
                 if data[i, j] == 'windows;mac;linux':
                     data[i, j] = 1
                 elif data[i, j] == 'windows':
@@ -38,7 +38,7 @@ def dataToNumbers(data):
                     data[i, j] = 3
 
             # genre
-            elif j == 4:
+            elif j == 2:
                 aux = 0 
                 if data[i,j].find('Action') != -1:
                     aux += 7
@@ -56,12 +56,14 @@ def dataToNumbers(data):
                     aux += 29
                 if data[i,j].find('Sports') != -1:
                     aux += 31
+                if data[i,j].find('Indie') != -1:
+                    aux += 37
                 
                 data[i, j] = aux
                 #Action Strategy RPG Casual Simulation Racing Adventure Sports
                 
             # owners mean
-            elif j == 9:     
+            elif j == 5:     
                 index = data[i,j].find('-')
                 minimum = float(data[i,j][:index])
                 maximum = float(data[i,j][index+1:])
@@ -77,23 +79,22 @@ def createY(owners):
     aux = (owners > mean)
     return aux.astype(int) 
 
-"""def main():
+def main():
     X = load_csv("steam.csv")
-    X = reduceData(X, np.array([11, 10, 8, 5, 4, 1, 0]))
+    X = reduceData(X, np.array([15, 14, 11, 10, 8, 7, 5, 4, 3, 1, 0]))
     
     tags = X[0, :]
     print(tags)
     
     X = np.delete(X, 0, 0)
     X = dataToNumbers(X)
-    print(X.mean(0))
     X = np.random.permutation(X)
-    Y = createY(X[:, 10])[np.newaxis].T
-    X = np.delete(X, 10, 1)
+    Y = createY(X[:, 5])[np.newaxis].T
+    X = np.delete(X, 5, 1)
     X = np.append(X, Y, 1)
 
     save_csv("steamReduced.csv", X)
 
-main()"""
+#main()
 
 #0 1 4 5 10 11 

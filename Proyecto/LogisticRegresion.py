@@ -50,15 +50,17 @@ def successPercentage(X, Y, O):
 def main():
     X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
     
-    Xpoly = polynomize(X, 2)                   # pone automaticamente columna de 1s
+    polyGrade = 3
+
+    Xpoly = polynomize(X, polyGrade)                   # pone automaticamente columna de 1s
     Xnorm, mu, sigma = normalize(Xpoly[:, 1:]) # se pasa sin la columna de 1s (evitar division entre 0)
     Xnorm = np.hstack([np.ones([Xnorm.shape[0], 1]), Xnorm]) # volvemos a poner columna de 1s
 
-    XpolyVal = polynomize(Xval, 2)
+    XpolyVal = polynomize(Xval, polyGrade)
     XnormVal = normalizeValues(XpolyVal[:, 1:], mu, sigma)
     XnormVal = np.hstack([np.ones([XnormVal.shape[0], 1]), XnormVal])
 
-    XpolyTest = polynomize(Xtest, 2)
+    XpolyTest = polynomize(Xtest, polyGrade)
     XnormTest = normalizeValues(XpolyTest[:, 1:], mu, sigma)
     XnormTest = np.hstack([np.ones([XnormTest.shape[0], 1]), XnormTest])
 
@@ -67,15 +69,15 @@ def main():
 
     thetaVec = np.zeros([n])
 
-    l =  np.arange(0, 10, 0.25)
+    l =  np.arange(0, 3, 0.1)
 
-    errorX = np.zeros(l.shape[0])
+    """errorX = np.zeros(l.shape[0])
     errorXVal = np.zeros(l.shape[0])
 
     # errores para cada valor de lambda
     for i in range(l.shape[0]):
         result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-         args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':700})
+         args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':70})
         O = result.x
 
         errorX[i] = coste(Xnorm, Y, O, l[i])
@@ -85,18 +87,18 @@ def main():
 
     # lambda que hace el error minimo en los ejemplos de validacion
     lambdaIndex = np.argmin(errorXVal)
-    print("Best lambda: " + str(l[lambdaIndex]))
+    print("Best lambda: " + str(l[lambdaIndex]))"""
 
     # thetas usando la lambda que hace el error minimo (sobre ejemplos de entrenamiento)
     result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-        args = (Xnorm, Y, l[lambdaIndex]), method = 'TNC', jac = True, options = {'maxiter':700})
+        args = (Xnorm, Y, 0), method = 'TNC', jac = True, options = {'maxiter':70})
 
     O = result.x
 
     #print(costeLineal(XnormTest, Ytest, O, l[lambdaIndex])) # error para los datos de testeo (nunca antes vistos)
     
     success = successPercentage(XnormTest, Ytest, O)
-    
+
     print("Porcentaje de acierto: " + str(success*100) + "%")
 
 main()
