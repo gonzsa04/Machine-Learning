@@ -50,7 +50,7 @@ def successPercentage(X, Y, O):
 def main():
     X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
     
-    polyGrade = 3
+    polyGrade = 2
 
     Xpoly = polynomize(X, polyGrade)                   # pone automaticamente columna de 1s
     Xnorm, mu, sigma = normalize(Xpoly[:, 1:]) # se pasa sin la columna de 1s (evitar division entre 0)
@@ -71,7 +71,7 @@ def main():
 
     l =  np.arange(0, 3, 0.1)
 
-    """errorX = np.zeros(l.shape[0])
+    errorX = np.zeros(l.shape[0])
     errorXVal = np.zeros(l.shape[0])
 
     # errores para cada valor de lambda
@@ -87,11 +87,11 @@ def main():
 
     # lambda que hace el error minimo en los ejemplos de validacion
     lambdaIndex = np.argmin(errorXVal)
-    print("Best lambda: " + str(l[lambdaIndex]))"""
+    print("Best lambda: " + str(l[lambdaIndex]))
 
     # thetas usando la lambda que hace el error minimo (sobre ejemplos de entrenamiento)
     result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-        args = (Xnorm, Y, 0), method = 'TNC', jac = True, options = {'maxiter':70})
+        args = (Xnorm, Y, l[lambdaIndex]), method = 'TNC', jac = True, options = {'maxiter':70})
 
     O = result.x
 
