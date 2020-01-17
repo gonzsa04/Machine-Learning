@@ -2,7 +2,6 @@ import numpy as np
 import scipy.optimize as opt             # para la funcion de gradiente
 import displayData
 from matplotlib import pyplot as plt     # para dibujar las graficas
-import checkNNGradients as check
 from valsLoader import *
 from dataReader import load_mat
 

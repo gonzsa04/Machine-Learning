@@ -97,4 +97,5 @@ def main():
 
 #main()
 
-#0 1 4 5 10 11 
+#release date, platforms, genre, positives, negatives, price
+#owners
