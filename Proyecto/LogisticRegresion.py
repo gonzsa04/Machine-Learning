@@ -2,13 +2,44 @@ import numpy as np
 import scipy.optimize as opt             # para la funcion de gradiente
 from matplotlib import pyplot as plt     # para dibujar las graficas
 from valsLoader import *
-from dataReader import load_mat
+
+def graphics(X, Y, O, poly):
+    plot_decisionboundary(X, Y, O, poly)
+
+    # Obtiene un vector con los índices de los ejemplos positivos
+    pos = np.where(Y == 1)
+    # Dibuja los ejemplos positivos
+    plt.scatter(X[pos, 0] ,X[pos, 1] , c = 'blue', s=2)
+
+    # Obtiene un vector con los índices de los ejemplos negativos
+    pos = np.where(Y == 0)
+    # Dibuja los ejemplos negativos
+    plt.scatter(X[pos, 0] ,X[pos, 1] , c = 'red', s=2)
+
+    plt.show()
+
+def plot_decisionboundary(X, Y, theta, poly):
+    """pinta el polinomio que separa los datos entre los que cumplen el requisito y los que no"""
+    plt.figure()
+
+    x1_min, x1_max = X[:, 0].min(), X[:, 0].max()
+    x2_min, x2_max = X[:, 1].min(), X[:, 1].max()
+
+    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max),
+    np.linspace(x2_min, x2_max)) # grid de cada columna de Xs
+
+    h = sigmoid(poly.fit_transform(np.c_[xx1.ravel(), xx2.ravel()]).dot(theta))# ravel las pone una tras otra
+
+    h = h.reshape(xx1.shape)
+
+    plt.contour(xx1, xx2, h, [0.5], linewidths=1, colors='g')
 
 # g(X*Ot) = h(x)
 def sigmoid(Z):
     return 1/(1+np.exp(-Z))
 
 def lambdaGraphic(errorX, errorXVal, lambdas):
+    """pinta la curva de aprendizaje de lambda"""
     plt.figure()
     plt.plot(lambdas, errorX)
     plt.plot(lambdas, errorXVal)
@@ -47,10 +78,41 @@ def successPercentage(X, Y, O):
     results = (results == Y)
     return results.sum()/results.shape[0]
 
-def main():
-    X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
+def bestColumns(X, Y, Xval, Yval, Xtest, Ytest):
+    """devuelve la mejor combinacion de columnas de X (las que obtienen un mejor porcentaje de acierto), mostrando
+    la grafica y el porcentaje de acierto obtenido de cada combinacion"""
+    mostSuccessfull = 0
+    bestRow = 0
+    bestColumn = 0
+
+    for x in range(0, 6):
+        for y in range(0, 6):
+            print("Row: " + str(x))
+            print("Column: " + str(y))
+            Xaux = np.vstack([X[:, x][np.newaxis], X[:, y][np.newaxis]]).T
+            XvalAux = np.vstack([Xval[:, x][np.newaxis], Xval[:, y][np.newaxis]]).T
+            XtestAux = np.vstack([Xtest[:, x][np.newaxis], Xtest[:, y][np.newaxis]]).T
+            samples = np.random.choice(X.shape[0], 400)
+
+            O, poly, success = logisticRegresion(Xaux, Y, XvalAux, Yval, XtestAux, Ytest, 6)
+            if(success > mostSuccessfull):
+                mostSuccessfull = success
+                bestRow = x
+                bestColumn = y
+
+            Xaux = Xaux[samples,:]
+            Yaux = Y[samples]
+            print(Xaux.shape)
+            graphics(Xaux, Yaux, O, poly)
+
+    return bestRow, bestColumn, mostSuccessfull
+
+def logisticRegresion(X, Y, Xval, Yval, Xtest, Ytest, polyGrade):
+    """aplica regresion logistica sobre un conjunto de datos, entrenando con una seccion de entrenamiento,
+    eligiendo la mejor lambda con una seccion de validacion, y probando los resultados obtenidos (porcentaje
+    de acierto) con una seccion de test"""
     
-    polyGrade = 2
+    poly = preprocessing.PolynomialFeatures(polyGrade)
 
     Xpoly = polynomize(X, polyGrade)                   # pone automaticamente columna de 1s
     Xnorm, mu, sigma = normalize(Xpoly[:, 1:]) # se pasa sin la columna de 1s (evitar division entre 0)
@@ -77,7 +139,7 @@ def main():
     # errores para cada valor de lambda
     for i in range(l.shape[0]):
         result = opt.minimize(fun = minimizeFunc, x0 = thetaVec,
-         args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':70})
+        args = (Xnorm, Y, l[i]), method = 'TNC', jac = True, options = {'maxiter':70})
         O = result.x
 
         errorX[i] = coste(Xnorm, Y, O, l[i])
@@ -94,11 +156,23 @@ def main():
         args = (Xnorm, Y, l[lambdaIndex]), method = 'TNC', jac = True, options = {'maxiter':70})
 
     O = result.x
-
-    #print(costeLineal(XnormTest, Ytest, O, l[lambdaIndex])) # error para los datos de testeo (nunca antes vistos)
-    
+            
     success = successPercentage(XnormTest, Ytest, O)
-
     print("Porcentaje de acierto: " + str(success*100) + "%")
+
+    return O, poly, success
+
+def main():
+    # dataset
+    X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
+
+    bestRow, bestColumn, mostSuccessfull = bestColumns(X, Y, Xval, Yval, Xtest, Ytest)
+    # mejor combinacion de columnas (mejor porcentaje de acierto)
+    print("Best Row: " + str(bestRow))
+    print("Best Column: " + str(bestColumn))
+    print("Most Successfull: " + str(mostSuccessfull*100))
+
+    # regresion logistica con todas las columnas
+    logisticRegresion(X, Y, Xval, Yval, Xtest, Ytest, 2)
 
 main()

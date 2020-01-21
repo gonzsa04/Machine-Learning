@@ -10,17 +10,16 @@ def save_csv(file_name, array):
     """guarda el array especificado y lo vuelca como csv"""
     np.savetxt(file_name, array, delimiter=",")
 
-def load_mat(file_name):
-    """carga el fichero mat especificado y lo devuelve en una matriz data"""
-    return loadmat(file_name)
-
 def reduceData(data, columns):
+    """quita de "data" las columnas establecidas por "columns" """
     for i in range(columns.shape[0]):
         data = np.delete(data, columns[i], 1)
 
     return data
 
 def dataToNumbers(data):
+    """ pasa todos los datos que no sean numeros a valores numericos"""
+
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
 
@@ -60,7 +59,7 @@ def dataToNumbers(data):
                     aux += 37
                 
                 data[i, j] = aux
-                #Action Strategy RPG Casual Simulation Racing Adventure Sports
+                #Action Strategy RPG Casual Simulation Racing Adventure Sports Indie
                 
             # owners mean
             elif j == 5:     
@@ -74,6 +73,10 @@ def dataToNumbers(data):
     return data
 
 def createY(owners):
+    """crea las Ys sobre los datos de los propietarios: si el juego tiene mas
+    propietarios que la media de propietarios, se considera exitoso (y = 1); si no,
+    se considera no exitoso (y = 0)"""
+
     L = owners.shape[0]
     mean = owners.sum()/L
     aux = (owners > mean)
@@ -81,17 +84,19 @@ def createY(owners):
 
 def main():
     X = load_csv("steam.csv")
+    #columnas que desechamos
     X = reduceData(X, np.array([15, 14, 11, 10, 8, 7, 5, 4, 3, 1, 0]))
     
+    #print de todos los tags (lo que significa cada columna)
     tags = X[0, :]
     print(tags)
     
-    X = np.delete(X, 0, 0)
+    X = np.delete(X, 0, 0) # quitamos tags
     X = dataToNumbers(X)
-    X = np.random.permutation(X)
+    X = np.random.permutation(X) # desordenamos aleatoriamente
     Y = createY(X[:, 5])[np.newaxis].T
-    X = np.delete(X, 5, 1)
-    X = np.append(X, Y, 1)
+    X = np.delete(X, 5, 1) # borramos columna de owners
+    X = np.append(X, Y, 1) # añadimos la transformacion (Ys) al final
 
     save_csv("steamReduced.csv", X)
 

@@ -3,34 +3,29 @@ from dataReader import load_csv
 from sklearn import preprocessing        # para polinomizar las Xs
 
 def loadValues(file_name):
+    """lee valores y los procesa, dividiendolos en datos de entrenamiento, validacion y test"""
+
     valores = load_csv(file_name)
 
-    totalX = valores[:, :valores.shape[1] - 1]   # datos de entrenamiento
+    totalX = valores[:, :valores.shape[1] - 1]
     totalY = valores[:, valores.shape[1] - 1][np.newaxis].T
-    #print(totalX.shape)
-    #print(totalY.shape)
 
     Xlength = int(totalX.shape[0] * 0.6)
     XvalLength = int(totalX.shape[0] * 0.2)
 
     X = totalX[:Xlength, :]
     Y = totalY[:Xlength, :]
-    #print(X.shape)
-    #print(Y.shape)
 
     Xval = totalX[Xlength:XvalLength + Xlength, :]
     Yval = totalY[Xlength:XvalLength + Xlength, :]
-    #print(Xval.shape)
-    #print(Yval.shape)
 
     Xtest = totalX[XvalLength + Xlength:, :]
     Ytest = totalY[XvalLength + Xlength:, :]
-    #print(Xtest.shape)
-    #print(Ytest.shape)
 
     return X, Y, Xval, Yval, Xtest, Ytest
 
 def polynomize(X, p):
+    """polinomiza X con grado p"""
     poly = preprocessing.PolynomialFeatures(p)
     return poly.fit_transform(X) # añade automaticamente la columna de 1s
 

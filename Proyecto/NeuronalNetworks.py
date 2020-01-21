@@ -1,15 +1,7 @@
 import numpy as np
 import scipy.optimize as opt             # para la funcion de gradiente
-import displayData
 from matplotlib import pyplot as plt     # para dibujar las graficas
 from valsLoader import *
-from dataReader import load_mat
-
-def graphics(X):
-    """Selecciona aleatoriamente 10 ejemplos y los pinta"""
-    sample = np.random.choice(X.shape[0], 100)
-    displayData.displayData(X[sample, :])
-    plt.show()
 
 # g(X*Ot) = h(x)
 def sigmoid(Z):
@@ -88,10 +80,11 @@ def backPropagation(params_rn, num_entradas, num_ocultas, num_etiquetas, X, Y, r
 
     return c, gradient
 
-def main():
-    X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
+def neuronalNetwork(X, Y, Xtest, Ytest, polyGrade):
+    """aplica redes neuronales sobre un conjunto de datos, entrenando con una seccion de entrenamiento,
+    y probando los resultados obtenidos (porcentaje de acierto) con una seccion de test"""
 
-    polyGrade = 3
+    poly = preprocessing.PolynomialFeatures(polyGrade)
 
     Xpoly = polynomize(X, polyGrade)                   # pone automaticamente columna de 1s
     Xnorm, mu, sigma = normalize(Xpoly[:, 1:]) # se pasa sin la columna de 1s (evitar division entre 0)
@@ -110,7 +103,6 @@ def main():
     for i in range(m):
         AuxY[i][int(Y[i])] = 1
 
-    # REDES NEURONALES
     capaInter = 40
     O1 = pesosAleatorios(Xnorm.shape[1], capaInter, 0.12)
     O2 = pesosAleatorios(capaInter, num_etiquetas, 0.12)
@@ -125,5 +117,41 @@ def main():
 
     success = neuronalSuccessPercentage(forPropagation(XnormTest, O1, O2)[4], Ytest)
     print("Neuronal network success: " + str(success) + " %")
+
+    return O1, O2, poly, success
+
+def bestColumns(X, Y, Xtest, Ytest):
+    """devuelve la mejor combinacion de columnas de X (las que obtienen un mejor porcentaje de acierto), mostrando
+    el porcentaje de acierto obtenido de cada combinacion"""
+    mostSuccessfull = 0
+    bestRow = 0
+    bestColumn = 0
+
+    for x in range(0, 6):
+        for y in range(0, 6):
+            print("Row: " + str(x))
+            print("Column: " + str(y))
+            Xaux = np.vstack([X[:, x][np.newaxis], X[:, y][np.newaxis]]).T
+            XtestAux = np.vstack([Xtest[:, x][np.newaxis], Xtest[:, y][np.newaxis]]).T
+
+            O1, O2, poly, success = neuronalNetwork(Xaux, Y, XtestAux, Ytest, 3)
+            if(success > mostSuccessfull):
+                mostSuccessfull = success
+                bestRow = x
+                bestColumn = y
+
+    return bestRow, bestColumn, mostSuccessfull
+
+def main():
+    X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
+
+    bestRow, bestColumn, mostSuccessfull = bestColumns(X, Y, Xtest, Ytest)
+    # mejor combinacion de columnas (mejor porcentaje de acierto)
+    print("Best Row: " + str(bestRow))
+    print("Best Column: " + str(bestColumn))
+    print("Most Successfull: " + str(mostSuccessfull))
+
+    # redes neuronales con todas las columnas
+    neuronalNetwork(X, Y, Xtest, Ytest, 3)
 
 main()
