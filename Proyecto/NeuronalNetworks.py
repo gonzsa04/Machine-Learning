@@ -2,6 +2,7 @@ import numpy as np
 import scipy.optimize as opt             # para la funcion de gradiente
 from matplotlib import pyplot as plt     # para dibujar las graficas
 from valsLoader import *
+from dataReader import save_csv
 
 # g(X*Ot) = h(x)
 def sigmoid(Z):
@@ -152,6 +153,9 @@ def main():
     print("Most Successfull: " + str(mostSuccessfull))
 
     # redes neuronales con todas las columnas
-    neuronalNetwork(X, Y, Xtest, Ytest, 3)
+    O1, O2, poly, success = neuronalNetwork(X, Y, Xtest, Ytest, 3)
 
-main()
+    save_csv("O1.csv", O1)
+    save_csv("O2.csv", O2)
+
+#main()

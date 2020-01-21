@@ -1,11 +1,10 @@
 from valsLoader import *
-from dataReader import dataToNumbers
-from joblib import load
+from dataReader import *
+from NeuronalNetworks import forPropagation
 
 def main():
-    X, Y, Xval, Yval, Xtest, Ytest = loadValues("steamReduced.csv")
-
-    clf = load('clf.joblib') 
+    O1 = load_csv("O1.csv")
+    O2 = load_csv("O2.csv")
     myX = np.array([])
 
     print("Introduce los parámetros de tu juego: ")
@@ -27,8 +26,8 @@ def main():
     myX = myX[np.newaxis]
     myX = dataToNumbers(myX)
     myX = np.delete(myX, 5, 1) # borramos columna de owners
-    print(clf.predict(myX))
+    myX = myX.astype(np.float)
 
-    #print((corrects / Xtest.shape[0])*100)
+    print("Probabilidad de éxito: " + str(forPropagation(myX, O1, O2)[4][0,1] * 100) + "%")
 
 main()
